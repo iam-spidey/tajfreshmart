@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Taj Fresh Mart | 2026 Master</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;900&display=swap');
+        body { -webkit-tap-highlight-color: transparent; background: #f8fafc; font-family: 'Inter', sans-serif; overflow-x: hidden; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .tracking-pulse { animation: ping 1.5s infinite; }
+        .status-pending { background: #fef3c7; color: #92400e; }
+        .status-packed { background: #dbeafe; color: #1e40af; }
+        .status-delivered { background: #dcfce7; color: #166534; }
+        .lang-btn-active { background: #166534 !important; color: white !important; }
+        .glow-red { border: 2px solid #ef4444 !important; animation: blink 1s infinite; }
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+    </style>
+</head>
+<body class="text-gray-900">
+
+    <div id="customer-app">
+        <header class="bg-green-900 text-white p-8 sticky top-0 z-50 rounded-b-[50px] shadow-2xl max-w-2xl mx-auto">
+            <div class="flex justify-between items-center mb-6">
+                <div>
+                    <h1 class="text-3xl font-black italic">Taj Fresh Mart</h1>
+                    <p class="text-[10px] font-bold opacity-50 uppercase tracking-widest">Mysuru Fresh Market</p>
+                </div>
+                <img src="icon.png" alt="Logo" class="h-16 w-16 rounded-full border-2 border-white/20 object-cover shadow-2xl">
+            </div>
+            <div class="space-y-4">
+                <div class="relative flex items-center">
+                    <i class="fas fa-search absolute left-6 text-gray-400"></i>
+                    <input type="text" id="search" onkeyup="renderCustomer()" placeholder="Search vegetables..." class="w-full bg-white text-gray-800 py-5 pl-14 pr-14 rounded-3xl text-sm font-bold shadow-xl border-none outline-none">
+                    <button onclick="startVoice()" class="absolute right-4 h-10 w-10 bg-gray-100 rounded-full text-gray-400"><i class="fas fa-microphone"></i></button>
+                </div>
+                <div class="flex justify-center gap-2">
+                    <button onclick="setLang('en-IN', this)" class="lang-btn bg-white/10 px-4 py-1.5 rounded-full text-[9px] font-black uppercase lang-btn-active">English</button>
+                    <button onclick="setLang('kn-IN', this)" class="lang-btn bg-white/10 px-4 py-1.5 rounded-full text-[9px] font-black uppercase">ಕನ್ನಡ</button>
+                </div>
+            </div>
+        </header>
+
+        <div id="customer-grid" class="p-6 grid grid-cols-2 md:grid-cols-3 gap-6 pb-48 max-w-6xl mx-auto"></div>
+
+        <div id="cart-bar" class="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md p-8 border-t flex flex-col gap-3 z-40 hidden rounded-t-[50px] shadow-2xl max-w-2xl mx-auto">
+            <button onclick="getGPS()" class="w-full bg-blue-50 text-blue-700 py-3 rounded-2xl text-[10px] font-black uppercase flex items-center justify-center gap-2 shadow-sm">
+                <i class="fas fa-location-arrow"></i> 📍 Pin My House (GPS)
+            </button>
+            <div class="flex justify-between items-center px-2">
+                <div id="cart-total" class="text-4xl font-black text-green-900">₹0</div>
+                <button onclick="processOrder()" class="bg-green-800 text-white px-12 py-5 rounded-3xl font-black uppercase text-xs tracking-widest shadow-xl">Order Now</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="delivery-app" class="hidden min-h-screen bg-slate-100 p-6 pb-32">
+        <div class="max-w-xl mx-auto">
+            <h2 class="text-2xl font-black text-blue-900 italic mb-8">Delivery Partner</h2>
+            <div id="delivery-list" class="space-y-4"></div>
+        </div>
+    </div>
+
+    <div id="admin-app" class="hidden min-h-screen bg-gray-50 p-6 pb-32">
+        <div class="max-w-7xl mx-auto">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                <div class="bg-white p-6 rounded-[35px] border text-center shadow-sm">
+                    <p class="text-[9px] font-black text-gray-400 uppercase mb-1">💵 Cash Collected</p>
+                    <h4 id="stat-cash" class="text-2xl font-black text-green-700">₹0</h4>
+                </div>
+                <div class="bg-white p-6 rounded-[35px] border text-center shadow-sm">
+                    <p class="text-[9px] font-black text-gray-400 uppercase mb-1">📱 UPI / QR Payments</p>
+                    <h4 id="stat-upi" class="text-2xl font-black text-blue-700">₹0</h4>
+                </div>
+                <div class="bg-green-900 p-6 rounded-[35px] text-white text-center shadow-xl">
+                    <p class="text-[9px] font-black opacity-50 uppercase mb-1">✨ Total Profit Today</p>
+                    <h4 id="stat-profit" class="text-2xl font-black">₹0</h4>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div class="bg-white p-8 rounded-[40px] shadow-sm border">
+                    <h3 class="font-black text-xs uppercase mb-6 text-green-700">Inventory Manager</h3>
+                    <div class="space-y-2 mb-6">
+                        <input id="adm-n" type="text" placeholder="Item Name" class="w-full p-4 border rounded-2xl bg-gray-50 text-sm outline-none">
+                        <div class="grid grid-cols-3 gap-2">
+                            <input id="adm-b" type="number" placeholder="Buy ₹" class="p-4 border rounded-2xl bg-gray-50 text-sm outline-none">
+                            <input id="adm-s" type="number" placeholder="Sell ₹" class="p-4 border rounded-2xl bg-gray-50 text-sm outline-none">
+                            <input id="adm-st" type="number" placeholder="Stock KG" class="p-4 border rounded-2xl bg-gray-50 text-sm outline-none">
+                        </div>
+                        <button onclick="saveItem()" class="w-full bg-green-900 text-white py-4 rounded-2xl font-black uppercase text-xs mt-2">Update Stock</button>
+                    </div>
+                    <div id="admin-stock-list" class="space-y-2"></div>
+                </div>
+
+                <div class="bg-white p-8 rounded-[40px] shadow-sm border">
+                    <h3 class="font-black text-xs uppercase mb-6 text-orange-600">Active Orders Control</h3>
+                    <div id="admin-orders" class="space-y-4"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="fixed bottom-8 right-8 z-[60]"><button onclick="document.getElementById('login-modal').classList.remove('hidden')" class="bg-black text-white h-14 w-14 rounded-full border-4 border-white shadow-2xl flex items-center justify-center"><i class="fas fa-shield-alt"></i></button></div>
+    
+    <div id="login-modal" class="hidden fixed inset-0 bg-black/95 z-[6000] flex items-center justify-center p-8">
+        <div class="bg-white p-10 rounded-[60px] w-full max-sm text-center">
+            <h2 class="font-black text-green-900 text-xs mb-8 uppercase tracking-widest">Master Login</h2>
+            <div id="step-pin">
+                <input type="password" id="pass-in" placeholder="PIN" class="w-full p-4 border-b-4 text-center text-4xl font-black outline-none mb-6">
+                <button onclick="handleLogin()" class="w-full bg-green-900 text-white font-black py-5 rounded-3xl uppercase text-xs shadow-xl">Verify</button>
+            </div>
+            <div id="step-otp" class="hidden">
+                <input type="text" id="otp-in" placeholder="000000" maxlength="6" class="w-full p-4 border-b-4 border-orange-500 text-center text-3xl font-black mb-6 outline-none text-orange-600">
+                <button onclick="checkAdminOTP()" class="w-full bg-green-900 text-white font-black py-5 rounded-3xl uppercase text-xs mb-4">Final Unlock</button>
+                <button id="otp-btn" onclick="sendAdminOTP()" class="text-[9px] font-black text-blue-600 uppercase underline">Get OTP via WhatsApp</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- 🛡️ BUSINESS CONFIG ---
+        const ADM_PHONE = "917348918423"; 
+        const ADM_PIN = "1234"; 
+        const DRV_PIN = "8888";
+
+        // --- 💾 DATABASE (LocalStorage) ---
+        let products = JSON.parse(localStorage.getItem('tajProducts')) || [];
+        let orders = JSON.parse(localStorage.getItem('tajOrders')) || [];
+        let cart = [], curLang = 'en-IN', genOTP = null, curGPS = null, watchId = null;
+
+        const vMap = { "tomato": "ಟೊಮೆಟೊ", "onion": "ಈರುಳ್ಳಿ", "potato": "ಆಲೂಗಡ್ಡೆ", "carrot": "ಕ್ಯಾರೆಟ್", "ginger": "ಶುಂಠಿ", "garlic": "ಬೆಳ್ಳುಳ್ಳಿ" };
+
+        window.onload = () => { renderCustomer(); };
+
+        // --- 🟢 AUTH LOGIC ---
+        function handleLogin() {
+            const pin = document.getElementById('pass-in').value;
+            if(pin === DRV_PIN) { switchView('delivery-app'); renderDrv(); }
+            else if(pin === ADM_PIN) { document.getElementById('step-pin').classList.add('hidden'); document.getElementById('step-otp').classList.remove('hidden'); }
+            else { alert("Access Denied"); }
+        }
+        function sendAdminOTP() { genOTP = Math.floor(100000 + Math.random() * 900000); window.open(`https://wa.me/${ADM_PHONE}?text=Taj%20Master%20Login:%20${genOTP}`); }
+        function checkAdminOTP() { if(document.getElementById('otp-in').value == genOTP) { switchView('admin-app'); renderAdm(); renderAdmOrders(); updateStats(); } }
+        function switchView(id) { document.querySelectorAll('#customer-app, #delivery-app, #admin-app, #login-modal').forEach(el => el.classList.add('hidden')); document.getElementById(id).classList.remove('hidden'); }
+
+        // --- 🛍️ CUSTOMER ENGINE ---
+        function renderCustomer() {
+            const s = document.getElementById('search').value.toLowerCase();
+            const filtered = products.filter(p => p.name.toLowerCase().includes(s));
+            document.getElementById('customer-grid').innerHTML = filtered.map((p) => {
+                const globalIdx = products.indexOf(p);
+                return `
+                <div class="bg-white p-5 rounded-[40px] border shadow-sm transition active:scale-95 ${p.stock <= 0 ? 'opacity-40 grayscale' : ''}">
+                    <img src="https://source.unsplash.com/400x400/?${encodeURIComponent(p.name)},vegetable" class="w-full h-32 object-cover rounded-[30px] mb-4 shadow-sm">
+                    <h3 class="font-black text-[12px] uppercase leading-none">${p.name}</h3>
+                    <p class="font-bold text-[10px] text-green-700 mt-1">${vMap[p.name.toLowerCase()] || ""}</p>
+                    <div class="flex justify-between items-center mt-5">
+                        <span class="text-xl font-black">₹${p.sell}</span>
+                        <button onclick="addToCart(${globalIdx})" class="bg-orange-500 text-white h-10 w-10 rounded-2xl flex items-center justify-center shadow-lg"><i class="fas fa-plus"></i></button>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        function addToCart(i) { 
+            const q = prompt(`How many KG of ${products[i].name}?`); 
+            if(q > 0 && parseFloat(q) <= products[i].stock) { 
+                cart.push({...products[i], qty: parseFloat(q)}); 
+                updateCartBar(); 
+            } else { alert("Insufficient Stock or Invalid Entry"); } 
+        }
+
+        function updateCartBar() { 
+            const t = cart.reduce((a,b)=>a+(b.sell*b.qty), 0); 
+            document.getElementById('cart-total').innerText = "₹"+t; 
+            document.getElementById('cart-bar').classList.toggle('hidden', cart.length===0); 
+        }
+
+        function getGPS() { 
+            navigator.geolocation.getCurrentPosition(p => { 
+                curGPS = `${p.coords.latitude},${p.coords.longitude}`; 
+                alert("📍 House Location Pinned via GPS!"); 
+            }); 
+        }
+        
+        function processOrder() {
+            const n = prompt("Customer Name:"), ph = prompt("WhatsApp Number:");
+            const pay = confirm("PAYMENT CHOICE:\n\nClick OK for Cash on Delivery\nClick Cancel for Pay at Door (UPI)");
+            let changeNote = ""; 
+            if(pay) { 
+                const ch = confirm("Do you need change for ₹500/200?"); 
+                if(ch) changeNote = prompt("Enter note amount you will give:"); 
+            }
+            const ad = prompt("Full Address / Landmark:");
+            if(!n || !ph || (!ad && !curGPS)) return alert("All details required!");
+
+            const otp = Math.floor(1000 + Math.random() * 9000);
+            let tot = 0, prof = 0;
+            cart.forEach(c => { 
+                tot += c.sell*c.qty; 
+                prof += (c.sell-c.buy)*c.qty; 
+                let idx = products.findIndex(p => p.name===c.name); 
+                if(idx!==-1) products[idx].stock -= c.qty; 
+            });
+
+            const order = { 
+                name: n, phone: ph, addr: ad, total: tot, profit: prof, 
+                method: pay ? "Cash on Delivery" : "Pay at Door (UPI)", 
+                changeRequest: changeNote, status: 'Pending', deliveryOTP: otp, 
+                mapLink: curGPS ? `https://www.google.com/maps?q=${curGPS}` : `https://www.google.com/maps/search/${encodeURIComponent(ad)}`, 
+                date: new Date().toLocaleTimeString() 
+            };
+
+            orders.unshift(order);
+            localStorage.setItem('tajOrders', JSON.stringify(orders)); 
+            localStorage.setItem('tajProducts', JSON.stringify(products));
+            showSuccessScreen(otp);
+        }
+
+        function showSuccessScreen(otp) {
+            document.body.innerHTML = `
+            <div class="fixed inset-0 bg-green-900 flex flex-col items-center justify-center text-white p-10 text-center">
+                <h1 class="text-3xl font-black mb-4 uppercase">Order Confirmed!</h1>
+                <div class="bg-white/10 p-8 rounded-[40px] mb-8">
+                    <p class="text-[10px] uppercase font-bold opacity-50 mb-2 tracking-widest">Your Delivery OTP</p>
+                    <h2 class="text-6xl font-black text-orange-400 tracking-widest">${otp}</h2>
+                </div>
+                <a href="tel:${ADM_PHONE}" class="bg-white text-green-900 w-full py-5 rounded-3xl font-black uppercase text-xs mb-4 shadow-2xl flex items-center justify-center gap-3">
+                    <i class="fas fa-phone-alt"></i> Call Delivery Partner
+                </a>
+                <button onclick="location.reload()" class="opacity-50 text-[10px] font-bold uppercase underline">Back to Shopping</button>
+            </div>`;
+        }
+
+        // --- 🚚 DELIVERY ENGINE ---
+        function renderDrv() {
+            const packed = orders.filter(o => o.status === 'Packed');
+            document.getElementById('delivery-list').innerHTML = packed.map(o => {
+                const idx = orders.indexOf(o);
+                return `
+                <div class="bg-white p-6 rounded-[40px] shadow-xl border-l-[12px] border-blue-600 mb-4">
+                    <div class="flex justify-between items-start mb-2">
+                        <div class="flex-1">
+                            <h3 class="font-black text-blue-900 text-lg">${o.name}</h3>
+                            <p class="text-[9px] font-black text-orange-600 mb-1">💰 ${o.method} ${o.changeRequest ? ' | CHANGE FOR ₹'+o.changeRequest : ''}</p>
+                            <p class="text-[10px] font-bold text-gray-400 uppercase leading-tight">${o.addr}</p>
+                        </div>
+                        <a href="${o.mapLink}" target="_blank" class="bg-blue-600 text-white h-12 w-12 rounded-2xl flex items-center justify-center shadow-lg"><i class="fas fa-directions"></i></a>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2 mt-4">
+                        <a href="tel:${o.phone}" class="bg-gray-100 text-center py-4 rounded-2xl text-[10px] font-black uppercase text-gray-600"><i class="fas fa-phone-alt mr-1"></i> Call</a>
+                        <button onclick="startTracking(${idx}, this)" class="bg-slate-800 text-white py-4 rounded-2xl text-[10px] font-black uppercase flex items-center justify-center gap-2">
+                            <i class="fas fa-satellite-dish"></i> Track
+                        </button>
+                    </div>
+                    <button onclick="verifyOtpDrv(${idx})" class="w-full mt-2 bg-blue-900 text-white py-5 rounded-3xl font-black uppercase text-xs tracking-widest shadow-lg">Verify OTP & Finish</button>
+                </div>`;
+            }).join('');
+        }
+        function startTracking(i, btn) { 
+            if(navigator.geolocation) { 
+                watchId = navigator.geolocation.watchPosition(p => { 
+                    orders[i].liveLocation = {lat: p.coords.latitude, lng: p.coords.longitude}; 
+                    localStorage.setItem('tajOrders', JSON.stringify(orders)); 
+                    btn.innerHTML = "<span class='tracking-pulse'>🛰️</span> LIVE"; 
+                }, null, {enableHighAccuracy: true}); 
+                alert("Live Location Sharing Activated! 🛰️");
+            } 
+        }
+        function verifyOtpDrv(i) { 
+            const entry = prompt(`Enter OTP for ${orders[i].name}:`);
+            if(entry == orders[i].deliveryOTP) { 
+                orders[i].status='Delivered'; 
+                if(watchId) navigator.geolocation.clearWatch(watchId); 
+                localStorage.setItem('tajOrders', JSON.stringify(orders)); 
+                alert("Delivery Verified Successfully! ✅"); 
+                renderDrv(); 
+            } else { alert("❌ WRONG OTP! Check with customer."); } 
+        }
+
+        // --- 📊 ADMIN ENGINE ---
+        function saveItem() { 
+            const n = document.getElementById('adm-n').value, b = document.getElementById('adm-b').value, s = document.getElementById('adm-s').value, st = document.getElementById('adm-st').value; 
+            if(n && b && s && st) { 
+                products.unshift({name:n, buy:parseFloat(b), sell:parseFloat(s), stock:parseFloat(st)}); 
+                localStorage.setItem('tajProducts', JSON.stringify(products)); 
+                renderAdm(); 
+            } 
+        }
+        function renderAdm() { 
+            document.getElementById('admin-stock-list').innerHTML = products.map((p, i) => `
+                <div class="p-5 bg-gray-50 rounded-3xl border flex justify-between items-center ${p.stock < 5 ? 'glow-red' : ''}">
+                    <p class="font-black text-xs uppercase">${p.name} <span class="ml-2 font-black ${p.stock < 5 ? 'text-red-500' : 'text-green-600'}">${p.stock} KG</span></p>
+                    <button onclick="products.splice(${i},1); localStorage.setItem('tajProducts', JSON.stringify(products)); renderAdm();" class="text-red-300 hover:text-red-600 transition"><i class="fas fa-trash"></i></button>
+                </div>`).join(''); 
+        }
+        function renderAdmOrders() { 
+            document.getElementById('admin-orders').innerHTML = orders.map((o, i) => `
+            <div class="p-6 bg-gray-50 rounded-[40px] border mb-4 shadow-sm">
+                <div class="flex justify-between items-center mb-4">
+                    <div>
+                        <p class="font-black text-xs uppercase text-blue-600 underline leading-none">${o.name}</p>
+                        <p class="text-[9px] font-bold text-gray-400 mt-2">${o.method} | OTP: <span class="text-orange-600">${o.deliveryOTP}</span></p>
+                    </div>
+                    <button onclick="tgAdm(${i})" class="px-5 py-2 rounded-xl text-[9px] font-black uppercase status-${o.status.toLowerCase()}">${o.status}</button>
+                </div>
+                ${o.status === 'Packed' && o.liveLocation ? `
+                    <button onclick="window.open('https://www.google.com/maps?q=${o.liveLocation.lat},${o.liveLocation.lng}')" class="w-full bg-blue-50 text-blue-600 py-3 rounded-2xl text-[9px] font-black uppercase border border-blue-100 flex items-center justify-center gap-2">
+                        <i class="fas fa-satellite-dish tracking-pulse"></i> Track Driver Now
+                    </button>` : ''}
+            </div>`).join(''); 
+        }
+        function tgAdm(i) { 
+            const states = ['Pending', 'Packed', 'Delivered']; 
+            orders[i].status = states[(states.indexOf(orders[i].status)+1)%3]; 
+            localStorage.setItem('tajOrders', JSON.stringify(orders)); 
+            renderAdmOrders(); 
+            updateStats(); 
+        }
+        function updateStats() {
+            let cash = 0, upi = 0, prof = 0;
+            orders.filter(o => o.status === 'Delivered').forEach(o => { 
+                if(o.method.includes("Cash")) cash += o.total; else upi += o.total; 
+                prof += o.profit; 
+            });
+            document.getElementById('stat-cash').innerText = "₹" + cash; 
+            document.getElementById('stat-upi').innerText = "₹" + upi; 
+            document.getElementById('stat-profit').innerText = "₹" + prof;
+        }
+
+        // --- 🎙️ UTILS ---
+        function setLang(l, b) { curLang = l; document.querySelectorAll('.lang-btn').forEach(x => x.classList.remove('lang-btn-active')); b.classList.add('lang-btn-active'); }
+        function startVoice() { 
+            const rec = new (window.webkitSpeechRecognition || window.SpeechRecognition)(); 
+            rec.lang = curLang; 
+            rec.onresult = (e) => { 
+                let t = e.results[0][0].transcript.toLowerCase(); 
+                document.getElementById('search').value = t; 
+                renderCustomer(); 
+            }; 
+            rec.start(); 
+        }
+    </script>
+</body>
+</html>
